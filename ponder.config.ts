@@ -1,7 +1,7 @@
 import { createConfig } from 'ponder';
 import { gnosis } from 'viem/chains';
 
-import { ABI } from './abis/svZCHF';
+import { svZCHFABI } from './abis/svZCHFABI';
 import { Address, http } from 'viem';
 
 export const config = {
@@ -12,6 +12,7 @@ export const config = {
 		),
 		pollingInterval: 5_000,
 		svZCHF: '0x6165946250dd04740ab1409217e95a4f38374fe9' as Address,
+		bridgedSavings: '0xbF594D0feD79AE56d910Cb01b5dD4f4c57B04402' as Address,
 		startBlock: 42067509,
 	},
 };
@@ -28,7 +29,7 @@ export default createConfig({
 	contracts: {
 		svZCHF: {
 			chain: gnosis.name,
-			abi: ABI,
+			abi: svZCHFABI,
 			address: config[gnosis.id].svZCHF,
 			startBlock: config[gnosis.id].startBlock,
 		},

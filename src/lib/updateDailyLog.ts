@@ -1,8 +1,9 @@
 import { type Context } from 'ponder:registry';
 import { config } from '../../ponder.config';
-import { ABI } from '../../abis/svZCHF';
 import { gnosis } from 'viem/chains';
 import { dailyAggregatedLog } from 'ponder:schema';
+import { svZCHFABI } from '../../abis/svZCHFABI';
+import { BridgedSavingsABI } from '../../abis/BridgedSavingsABI';
 
 interface UpdateDailyLogProps {
 	client: Context['client'];
@@ -34,22 +35,29 @@ export async function updateDailyLog({
 
 	try {
 		const contractAddress = config[gnosis.id].svZCHF;
+		const savingsAddress = config[gnosis.id].bridgedSavings;
+
+		const nativeYield = await client.readContract({
+			address: savingsAddress,
+			abi: BridgedSavingsABI,
+			functionName: 'currentRatePPM',
+		});
 
 		const svZCHFPrice = await client.readContract({
 			address: contractAddress,
-			abi: ABI,
+			abi: svZCHFABI,
 			functionName: 'price',
 		});
 
 		const totalAssets = await client.readContract({
 			address: contractAddress,
-			abi: ABI,
+			abi: svZCHFABI,
 			functionName: 'totalAssets',
 		});
 
 		const totalShares = await client.readContract({
 			address: contractAddress,
-			abi: ABI,
+			abi: svZCHFABI,
 			functionName: 'totalSupply',
 		});
 
@@ -59,6 +67,7 @@ export async function updateDailyLog({
 				id: dayId,
 				date: dateString,
 				chainId,
+				nativeYield,
 				depositCount: kind === 'deposit' ? 1n : 0n,
 				withdrawCount: kind === 'withdraw' ? 1n : 0n,
 				totalDeposits: kind === 'deposit' ? assets : 0n,

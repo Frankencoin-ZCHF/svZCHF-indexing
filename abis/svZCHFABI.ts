@@ -1,4 +1,4 @@
-export const ABI = [
+export const svZCHFABI = [
 	{
 		inputs: [
 			{ internalType: 'address', name: '_owner', type: 'address' },
