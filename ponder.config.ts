@@ -1,20 +1,36 @@
-import { createConfig } from "ponder";
+import { createConfig } from 'ponder';
+import { gnosis } from 'viem/chains';
 
-import { ExampleContractAbi } from "./abis/ExampleContractAbi";
+import { ABI } from './abis/svZCHF';
+import { Address, http } from 'viem';
+
+export const config = {
+	[gnosis.id]: {
+		rpc: `https://gnosis-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_RPC_KEY}`,
+		maxRequestsPerSecond: parseInt(
+			process.env.MAX_REQUESTS_PER_SECOND || '50'
+		),
+		pollingInterval: 5_000,
+		svZCHF: '0x6165946250dd04740ab1409217e95a4f38374fe9' as Address,
+		startBlock: 42067509,
+	},
+};
 
 export default createConfig({
-  chains: {
-    mainnet: {
-      id: 1,
-      rpc: process.env.PONDER_RPC_URL_1!,
-    },
-  },
-  contracts: {
-    ExampleContract: {
-      chain: "mainnet",
-      abi: ExampleContractAbi,
-      address: "0x0000000000000000000000000000000000000000",
-      startBlock: 1234567,
-    },
-  },
+	chains: {
+		[gnosis.name]: {
+			id: gnosis.id,
+			maxRequestsPerSecond: config[gnosis.id].maxRequestsPerSecond,
+			pollingInterval: config[gnosis.id].pollingInterval,
+			rpc: http(config[gnosis.id].rpc),
+		},
+	},
+	contracts: {
+		svZCHF: {
+			chain: gnosis.name,
+			abi: ABI,
+			address: config[gnosis.id].svZCHF,
+			startBlock: config[gnosis.id].startBlock,
+		},
+	},
 });
