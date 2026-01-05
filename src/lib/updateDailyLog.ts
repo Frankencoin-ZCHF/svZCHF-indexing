@@ -37,6 +37,15 @@ export async function updateDailyLog({
 		const contractAddress = config[gnosis.id].svZCHF;
 		const savingsAddress = config[gnosis.id].bridgedSavings;
 
+		// Query previous day's entry to get previous price
+		const previousDate = new Date(timestampDay - 24 * 60 * 60 * 1000);
+		const previousDateString = previousDate.toISOString().split('T')[0] || previousDate.toISOString();
+		const previousDayId = `${chainId}-${previousDateString}`;
+		
+		const previousDayEntry = await db.find(dailyAggregatedLog, { id: previousDayId });
+		
+		const previousPrice = previousDayEntry?.svZCHFPrice;
+
 		const nativeYield = await client.readContract({
 			address: savingsAddress,
 			abi: BridgedSavingsABI,
@@ -61,6 +70,14 @@ export async function updateDailyLog({
 			functionName: 'totalSupply',
 		});
 
+		// Calculate implied yield in PPM (parts per million)
+		let impliedYield = 0n;
+		if (previousPrice && previousPrice > 0n) {
+			// ((currentPrice - previousPrice) / previousPrice) * 1,000,000
+			const priceDiff = svZCHFPrice - previousPrice;
+			impliedYield = (priceDiff * 1000000n) / previousPrice;
+		}
+
 		await db
 			.insert(dailyAggregatedLog)
 			.values({
@@ -68,10 +85,11 @@ export async function updateDailyLog({
 				date: dateString,
 				chainId,
 				nativeYield,
+				impliedYield,
 				depositCount: kind === 'deposit' ? 1n : 0n,
+				deposits: kind === 'deposit' ? assets : 0n,
 				withdrawCount: kind === 'withdraw' ? 1n : 0n,
-				totalDeposits: kind === 'deposit' ? assets : 0n,
-				totalWithdrawals: kind === 'withdraw' ? assets : 0n,
+				withdrawals: kind === 'withdraw' ? assets : 0n,
 				svZCHFPrice,
 				totalAssets,
 				totalShares,
@@ -86,17 +104,19 @@ export async function updateDailyLog({
 					kind === 'withdraw'
 						? current.withdrawCount + 1n
 						: current.withdrawCount,
-				totalDeposits:
+				deposits:
 					kind === 'deposit'
-						? current.totalDeposits + assets
-						: current.totalDeposits,
-				totalWithdrawals:
+						? current.deposits + assets
+						: current.deposits,
+				withdrawals:
 					kind === 'withdraw'
-						? current.totalWithdrawals + assets
-						: current.totalWithdrawals,
+						? current.withdrawals + assets
+						: current.withdrawals,
 				svZCHFPrice,
 				totalAssets,
 				totalShares,
+				nativeYield,
+				impliedYield,
 			}));
 	} catch (error) {
 		console.error('Error updating daily log:', error);

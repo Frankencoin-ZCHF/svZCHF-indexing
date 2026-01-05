@@ -13,21 +13,21 @@ This project indexes svZCHF-related events and transactions on the blockchain, p
 
 ### Installation
 ```bash
-npm install
+yarn install
 ```
 
 ### Development
 ```bash
-npm run dev
+yarn dev
 ```
 
 ### Commands
-- `npm run dev` - Start development server
-- `npm run start` - Start production server
-- `npm run db` - Database operations
-- `npm run codegen` - Generate code from schema
-- `npm run lint` - Lint code
-- `npm run typecheck` - Type checking
+- `yarn dev` - Start development server
+- `yarn start` - Start production server
+- `yarn db` - Database operations
+- `yarn codegen` - Generate code from schema
+- `yarn lint` - Lint code
+- `yarn typecheck` - Type checking
 
 ## Technology Stack
 - **Ponder** - Blockchain indexing framework
