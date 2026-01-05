@@ -29,6 +29,9 @@ yarn dev
 - `yarn lint` - Lint code
 - `yarn typecheck` - Type checking
 
+### Scripts
+- `yarn tsx scripts/format-exports.ts` - Format and export data to CSV
+
 ## Technology Stack
 - **Ponder** - Blockchain indexing framework
 - **Hono** - Web framework for APIs
