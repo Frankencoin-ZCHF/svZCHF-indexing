@@ -11,7 +11,7 @@ export const dailyAggregatedLog = onchainTable('daily_aggregated_log', (t) => ({
 	svZCHFPrice: t.bigint(),
 	totalAssets: t.bigint(),
 	totalShares: t.bigint(),
-	nativeYields: t.bigint(),
+	nativeYield: t.bigint(),
 	impliedYield: t.bigint(),
 	timestamp: t.bigint().notNull(),
 }));

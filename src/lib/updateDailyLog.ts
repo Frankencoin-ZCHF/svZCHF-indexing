@@ -39,18 +39,24 @@ export async function updateDailyLog({
 
 		// Query previous day's entry to get previous price
 		const previousDate = new Date(timestampDay - 24 * 60 * 60 * 1000);
-		const previousDateString = previousDate.toISOString().split('T')[0] || previousDate.toISOString();
+		const previousDateString =
+			previousDate.toISOString().split('T')[0] ||
+			previousDate.toISOString();
 		const previousDayId = `${chainId}-${previousDateString}`;
-		
-		const previousDayEntry = await db.find(dailyAggregatedLog, { id: previousDayId });
-		
+
+		const previousDayEntry = await db.find(dailyAggregatedLog, {
+			id: previousDayId,
+		});
+
 		const previousPrice = previousDayEntry?.svZCHFPrice;
 
-		const nativeYield = await client.readContract({
-			address: savingsAddress,
-			abi: BridgedSavingsABI,
-			functionName: 'currentRatePPM',
-		});
+		const nativeYield = BigInt(
+			await client.readContract({
+				address: savingsAddress,
+				abi: BridgedSavingsABI,
+				functionName: 'currentRatePPM',
+			})
+		);
 
 		const svZCHFPrice = await client.readContract({
 			address: contractAddress,
@@ -70,12 +76,11 @@ export async function updateDailyLog({
 			functionName: 'totalSupply',
 		});
 
-		// Calculate implied yield in PPM (parts per million)
+		// Calculate implied yield in PPM (parts per million), annualized
 		let impliedYield = 0n;
 		if (previousPrice && previousPrice > 0n) {
-			// ((currentPrice - previousPrice) / previousPrice) * 1,000,000
 			const priceDiff = svZCHFPrice - previousPrice;
-			impliedYield = (priceDiff * 1000000n) / previousPrice;
+			impliedYield = (priceDiff * 1000000n * 365n) / previousPrice;
 		}
 
 		await db
