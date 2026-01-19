@@ -79,20 +79,18 @@ export async function updateDailyLog({
 			parseFloat(String((timeAliveSec * 1000n) / 3600n / 24n)) / 1000;
 
 		// Calculate implied yield in PPM (parts per million), annualized
-		let impliedYield = 0n;
-		if (previousPrice && previousPrice > 0n) {
-			const priceDiff = svZCHFPrice - previousPrice;
-			impliedYield = (priceDiff * 1000000n * 365n) / previousPrice;
-		}
+		// let impliedYield = 0n;
+		// if (previousPrice && previousPrice > 0n) {
+		// 	const priceDiff = svZCHFPrice - previousPrice;
+		// 	impliedYield = (priceDiff * 1000000n * 365n) / previousPrice;
+		// }
 
 		// Calculate accumulative yield in PPM (parts per million)
 		let accumulativeYield = 0n;
 		if (previousPrice && previousPrice > 0n) {
 			const totalYield = parseFloat(String(svZCHFPrice)) / 10 ** 18;
 			accumulativeYield = BigInt(
-				Math.floor(
-					(totalYield ** (365000 / timeAliveDays) - 1) * 1000000,
-				),
+				Math.floor((totalYield ** (365 / timeAliveDays) - 1) * 1000000),
 			);
 		}
 
@@ -103,7 +101,6 @@ export async function updateDailyLog({
 				date: dateString,
 				chainId,
 				nativeYield,
-				impliedYield,
 				accumulativeYield,
 				depositCount: kind === 'deposit' ? 1n : 0n,
 				deposits: kind === 'deposit' ? assets : 0n,
@@ -136,7 +133,7 @@ export async function updateDailyLog({
 				totalAssets,
 				totalShares,
 				nativeYield,
-				impliedYield,
+				accumulativeYield,
 			}));
 	} catch (error) {
 		console.error('Error updating daily log:', error);

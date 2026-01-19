@@ -30,7 +30,21 @@ yarn dev
 - `yarn typecheck` - Type checking
 
 ### Scripts
+
+**Data Export:**
 - `yarn tsx scripts/format-exports.ts` - Format and export data to CSV
+
+**Charts Generation:**
+- `yarn tsx scripts/create-charts.ts` - Generate visualization charts (PNG) from exported data
+
+  Generates 7 charts in `/exports`:
+  1. Price Over Time
+  2. Implied vs Native Yield Comparison
+  3. Daily Net Flow
+  4. Total Assets Growth
+  5. Transaction Volume
+  6. Activity Heatmap
+  7. Cumulative Growth Dashboard
 
 ## Technology Stack
 - **Ponder** - Blockchain indexing framework
