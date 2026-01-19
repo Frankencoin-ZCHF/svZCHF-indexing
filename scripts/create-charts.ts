@@ -545,6 +545,137 @@ function createActivityHeatmap() {
 	chart.dispose();
 }
 
+// 6. Accumulated Volume Over Time
+function createAccumulatedVolumeChart() {
+	const canvas = createCanvas(CHART_WIDTH, CHART_HEIGHT);
+	const chart = echarts.init(canvas as any);
+
+	const dates = chronologicalData.map((d) => d.date);
+
+	// Calculate cumulative volumes
+	let cumulativeDeposits = 0;
+	let cumulativeWithdrawals = 0;
+
+	const accumulatedDeposits = chronologicalData.map((d) => {
+		cumulativeDeposits += weiToDecimal(d.deposits);
+		return cumulativeDeposits;
+	});
+
+	const accumulatedWithdrawals = chronologicalData.map((d) => {
+		cumulativeWithdrawals += weiToDecimal(d.withdrawals);
+		return cumulativeWithdrawals;
+	});
+
+	const totalVolume = accumulatedDeposits.map(
+		(d, i) => d + (accumulatedWithdrawals[i] ?? 0),
+	);
+
+	const allVolumes = [
+		...accumulatedDeposits,
+		...accumulatedWithdrawals,
+		...totalVolume,
+	];
+	const volumeBounds = calculateAxisBounds(allVolumes, 10);
+
+	const option = {
+		title: {
+			text: 'Accumulated Volume Over Time',
+			left: 'center',
+			textStyle: {
+				fontSize: 24,
+				fontWeight: 'bold',
+			},
+		},
+		tooltip: {
+			trigger: 'axis',
+			formatter: (params: any) => {
+				let result = `${params[0].name}<br/>`;
+				params.forEach((param: any) => {
+					result += `${param.seriesName}: ${formatLargeNumber(param.value)} CHF<br/>`;
+				});
+				return result;
+			},
+		},
+		legend: {
+			data: [
+				'Total Volume',
+				'Accumulated Deposits',
+				'Accumulated Withdrawals',
+			],
+			top: 40,
+		},
+		grid: {
+			left: 100,
+			right: 80,
+			top: 100,
+			bottom: 80,
+		},
+		xAxis: {
+			type: 'category',
+			data: dates,
+			axisLabel: {
+				rotate: 45,
+				interval: Math.floor(dates.length / 10),
+			},
+		},
+		yAxis: {
+			type: 'value',
+			name: 'Accumulated Volume (CHF)',
+			scale: true,
+			min: 0,
+			max: volumeBounds.max,
+			axisLabel: {
+				formatter: formatLargeNumber,
+			},
+			splitNumber: 5,
+		},
+		series: [
+			{
+				name: 'Total Volume',
+				type: 'line',
+				data: totalVolume,
+				smooth: true,
+				lineStyle: {
+					width: 4,
+					color: '#5470c6',
+				},
+				areaStyle: {
+					color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+						{ offset: 0, color: 'rgba(84, 112, 198, 0.4)' },
+						{ offset: 1, color: 'rgba(84, 112, 198, 0.05)' },
+					]),
+				},
+			},
+			{
+				name: 'Accumulated Deposits',
+				type: 'line',
+				data: accumulatedDeposits,
+				smooth: true,
+				lineStyle: {
+					width: 2,
+					color: '#91cc75',
+					type: 'dashed',
+				},
+			},
+			{
+				name: 'Accumulated Withdrawals',
+				type: 'line',
+				data: accumulatedWithdrawals,
+				smooth: true,
+				lineStyle: {
+					width: 2,
+					color: '#ee6666',
+					type: 'dashed',
+				},
+			},
+		],
+	};
+
+	chart.setOption(option);
+	saveChart(chart, 'chart-6-accumulated-volume.png');
+	chart.dispose();
+}
+
 // 14. Cumulative Growth Dashboard (multi-panel)
 function createDashboard() {
 	const canvas = createCanvas(CHART_WIDTH, CHART_HEIGHT * 2);
@@ -774,6 +905,7 @@ async function generateAllCharts() {
 		createNetFlowChart();
 		createTotalAssetsChart();
 		createTransactionVolumeChart();
+		createAccumulatedVolumeChart();
 		createActivityHeatmap();
 		createDashboard();
 
