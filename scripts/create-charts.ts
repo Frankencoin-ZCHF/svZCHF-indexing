@@ -130,24 +130,24 @@ function createPriceChart() {
 	chart.dispose();
 }
 
-// 2. Implied vs Native Yield
+// 2. Accumulative vs Native Yield
 function createYieldChart() {
 	const canvas = createCanvas(CHART_WIDTH, CHART_HEIGHT);
 	const chart = echarts.init(canvas as any);
 
 	const dates = chronologicalData.map((d) => d.date);
-	const impliedYields = chronologicalData.map((d) =>
+	const accumulativeYields = chronologicalData.map((d) =>
 		formatYield(d.accumulativeYield),
 	);
 	const nativeYields = chronologicalData.map((d) =>
 		formatYield(d.nativeYield),
 	);
-	const allYields = [...impliedYields, ...nativeYields];
+	const allYields = [...accumulativeYields, ...nativeYields];
 	const yieldBounds = calculateAxisBounds(allYields, 15);
 
 	const option = {
 		title: {
-			text: 'Implied vs Native Yield',
+			text: 'Accumulative vs Native Yield',
 			left: 'center',
 			textStyle: {
 				fontSize: 24,
@@ -165,7 +165,7 @@ function createYieldChart() {
 			},
 		},
 		legend: {
-			data: ['Implied Yield', 'Native Yield'],
+			data: ['Accumulative Yield', 'Native Yield'],
 			top: 40,
 		},
 		grid: {
@@ -195,9 +195,9 @@ function createYieldChart() {
 		},
 		series: [
 			{
-				name: 'Implied Yield',
+				name: 'Accumulative Yield',
 				type: 'line',
-				data: impliedYields,
+				data: accumulativeYields,
 				smooth: true,
 				lineStyle: {
 					width: 3,
@@ -555,7 +555,7 @@ function createDashboard() {
 	const totalAssets = chronologicalData.map((d) =>
 		weiToDecimal(d.totalAssets),
 	);
-	const impliedYields = chronologicalData.map((d) =>
+	const accumulativeYields = chronologicalData.map((d) =>
 		formatYield(d.accumulativeYield),
 	);
 	const netFlows = chronologicalData.map((d) => {
@@ -566,7 +566,7 @@ function createDashboard() {
 
 	const priceBounds = calculateAxisBounds(prices, 5);
 	const assetBounds = calculateAxisBounds(totalAssets, 10);
-	const yieldBounds = calculateAxisBounds(impliedYields, 15);
+	const yieldBounds = calculateAxisBounds(accumulativeYields, 15);
 	const flowBounds = calculateAxisBounds(netFlows, 20);
 
 	const option = {
@@ -593,7 +593,7 @@ function createDashboard() {
 				textStyle: { fontSize: 16 },
 			},
 			{
-				text: 'Implied Yield',
+				text: 'Accumulative Yield',
 				left: '12%',
 				top: '54%',
 				textStyle: { fontSize: 16 },
@@ -736,11 +736,11 @@ function createDashboard() {
 				showSymbol: false,
 			},
 			{
-				name: 'Implied Yield',
+				name: 'Accumulative Yield',
 				type: 'line',
 				xAxisIndex: 2,
 				yAxisIndex: 2,
-				data: impliedYields,
+				data: accumulativeYields,
 				smooth: true,
 				lineStyle: { width: 2, color: '#fac858' },
 				showSymbol: false,

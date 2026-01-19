@@ -39,7 +39,7 @@ yarn dev
 
   Generates 7 charts in `/exports`:
   1. Price Over Time
-  2. Implied vs Native Yield Comparison
+  2. Accumulative vs Native Yield Comparison
   3. Daily Net Flow
   4. Total Assets Growth
   5. Transaction Volume
