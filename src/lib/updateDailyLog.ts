@@ -38,15 +38,13 @@ export async function updateDailyLog({
 		const savingsAddress = config[gnosis.id].bridgedSavings;
 
 		// Query previous day's entry to get previous price
-		const previousDate = new Date(timestampDay - 24 * 60 * 60 * 1000);
-		const previousDateString =
-			previousDate.toISOString().split('T')[0] ||
-			previousDate.toISOString();
-		const previousDayId = `${chainId}-${previousDateString}`;
-
-		const previousDayEntry = await db.find(dailyAggregatedLog, {
-			id: previousDayId,
-		});
+		const previousDayEntry = (
+			await db.sql
+				.select()
+				.from(dailyAggregatedLog)
+				.orderBy(dailyAggregatedLog.timestamp)
+				.limit(1)
+		)[0];
 
 		const previousPrice = previousDayEntry?.svZCHFPrice;
 
@@ -55,7 +53,7 @@ export async function updateDailyLog({
 				address: savingsAddress,
 				abi: BridgedSavingsABI,
 				functionName: 'currentRatePPM',
-			})
+			}),
 		);
 
 		const svZCHFPrice = await client.readContract({
@@ -76,11 +74,26 @@ export async function updateDailyLog({
 			functionName: 'totalSupply',
 		});
 
+		let timeAliveSec = timestamp - 1757586790n;
+		let timeAliveDays =
+			parseFloat(String((timeAliveSec * 1000n) / 3600n / 24n)) / 1000;
+
 		// Calculate implied yield in PPM (parts per million), annualized
 		let impliedYield = 0n;
 		if (previousPrice && previousPrice > 0n) {
 			const priceDiff = svZCHFPrice - previousPrice;
 			impliedYield = (priceDiff * 1000000n * 365n) / previousPrice;
+		}
+
+		// Calculate accumulative yield in PPM (parts per million)
+		let accumulativeYield = 0n;
+		if (previousPrice && previousPrice > 0n) {
+			const totalYield = parseFloat(String(svZCHFPrice)) / 10 ** 18;
+			accumulativeYield = BigInt(
+				Math.floor(
+					(totalYield ** (365000 / timeAliveDays) - 1) * 1000000,
+				),
+			);
 		}
 
 		await db
@@ -91,6 +104,7 @@ export async function updateDailyLog({
 				chainId,
 				nativeYield,
 				impliedYield,
+				accumulativeYield,
 				depositCount: kind === 'deposit' ? 1n : 0n,
 				deposits: kind === 'deposit' ? assets : 0n,
 				withdrawCount: kind === 'withdraw' ? 1n : 0n,
@@ -98,6 +112,7 @@ export async function updateDailyLog({
 				svZCHFPrice,
 				totalAssets,
 				totalShares,
+				timeAlive: timeAliveSec,
 				timestamp: BigInt(timestampDay),
 			})
 			.onConflictDoUpdate((current) => ({
