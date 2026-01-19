@@ -47,17 +47,19 @@ yarn dev
   7. Activity Heatmap
   8. Cumulative Growth Dashboard
 
-- `yarn tsx scripts/rolling-yield.ts` - Generate rolling 30-day annualized yield charts
+- `yarn tsx scripts/rolling-yield.ts` - Generate rolling annualized yield charts
 
-  Generates 2 charts:
-  1. **Rolling 30-Day vs Native Yield** - Comparison chart
-  2. **Rolling 30-Day Yield with Net Volume** - Combined dual-axis chart showing yield and net flow bars
+  Generates 3 charts:
+  1. **Rolling 7-Day vs Native Yield** - Short-term yield comparison
+  2. **Rolling 30-Day vs Native Yield** - Medium-term yield comparison
+  3. **Rolling 30-Day Yield with Net Volume** - Combined dual-axis chart showing yield and net flow bars
 
-  Calculates rolling 30-day yield based on actual price changes and timestamps:
-  - Uses a sliding 30-day window
+  Calculates rolling yield based on actual price changes and timestamps:
+  - Uses sliding 7-day and 30-day windows
   - Filters to include only days with actual data
-  - Annualizes based on actual time elapsed (not assumed 30 days)
+  - Annualizes based on actual time elapsed (not assumed days)
   - Shows correlation between yield performance and capital flows
+  - 7-day rolling is more responsive to recent price changes
 
 ## Technology Stack
 - **Ponder** - Blockchain indexing framework

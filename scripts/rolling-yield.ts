@@ -37,8 +37,11 @@ function calculateAxisBounds(data: number[], paddingPercent: number = 10) {
 	};
 }
 
-// Calculate rolling 30-day annualized yield
-function calculateRolling30DayYield(data: typeof chronologicalData) {
+// Calculate rolling annualized yield for N days
+function calculateRollingYield(
+	data: typeof chronologicalData,
+	days: number,
+) {
 	const results = [];
 
 	for (let i = 0; i < data.length; i++) {
@@ -46,21 +49,21 @@ function calculateRolling30DayYield(data: typeof chronologicalData) {
 		const currentTimestamp = Number(currentEntry.timestamp);
 		const currentPrice = weiToDecimal(currentEntry.svZCHFPrice);
 
-		// Filter entries from last 30 days (using actual timestamps)
-		const thirtyDaysAgo = currentTimestamp - 30 * 24 * 60 * 60 * 1000;
-		const last30Days = data.slice(0, i + 1).filter((entry) => {
+		// Filter entries from last N days (using actual timestamps)
+		const nDaysAgo = currentTimestamp - days * 24 * 60 * 60 * 1000;
+		const lastNDays = data.slice(0, i + 1).filter((entry) => {
 			const entryTimestamp = Number(entry.timestamp);
-			return entryTimestamp >= thirtyDaysAgo;
+			return entryTimestamp >= nDaysAgo;
 		});
 
 		// Need at least 2 data points to calculate yield
-		if (last30Days.length < 2) {
-			results.push({ date: currentEntry.date, rolling30DayYield: null });
+		if (lastNDays.length < 2) {
+			results.push({ date: currentEntry.date, rollingYield: null });
 			continue;
 		}
 
-		// Get the oldest entry in the 30-day window
-		const oldestEntry = last30Days[0];
+		// Get the oldest entry in the N-day window
+		const oldestEntry = lastNDays[0];
 		const oldPrice = weiToDecimal(oldestEntry.svZCHFPrice);
 		const oldTimestamp = Number(oldestEntry.timestamp);
 
@@ -69,7 +72,7 @@ function calculateRolling30DayYield(data: typeof chronologicalData) {
 
 		// Avoid division by zero
 		if (timeDiffSeconds === 0 || oldPrice === 0) {
-			results.push({ date: currentEntry.date, rolling30DayYield: null });
+			results.push({ date: currentEntry.date, rollingYield: null });
 			continue;
 		}
 
@@ -81,11 +84,19 @@ function calculateRolling30DayYield(data: typeof chronologicalData) {
 
 		results.push({
 			date: currentEntry.date,
-			rolling30DayYield: annualizedYield,
+			rollingYield: annualizedYield,
 		});
 	}
 
 	return results;
+}
+
+// Wrapper for backward compatibility
+function calculateRolling30DayYield(data: typeof chronologicalData) {
+	return calculateRollingYield(data, 30).map((d) => ({
+		date: d.date,
+		rolling30DayYield: d.rollingYield,
+	}));
 }
 
 // Create Rolling 30-Day Yield Chart
@@ -190,6 +201,112 @@ function createRollingYieldChart() {
 		buffer,
 	);
 	console.log('✅ Generated: chart-rolling-30day-yield.png');
+
+	chart.dispose();
+}
+
+// Create Rolling 7-Day Yield Chart
+function createRolling7DayYieldChart() {
+	const canvas = createCanvas(CHART_WIDTH, CHART_HEIGHT);
+	const chart = echarts.init(canvas as any);
+
+	const dates = chronologicalData.map((d) => d.date);
+	const rollingYieldData = calculateRollingYield(chronologicalData, 7);
+	const rollingYields = rollingYieldData.map((d) => d.rollingYield);
+	const nativeYields = chronologicalData.map((d) =>
+		formatYield(d.nativeYield),
+	);
+
+	// Filter out null values for bounds calculation
+	const validRollingYields = rollingYields.filter(
+		(y) => y !== null,
+	) as number[];
+	const allYields = [...validRollingYields, ...nativeYields];
+	const yieldBounds = calculateAxisBounds(allYields, 15);
+
+	const option = {
+		title: {
+			text: 'Rolling 7-Day vs Native Yield',
+			left: 'center',
+			textStyle: {
+				fontSize: 24,
+				fontWeight: 'bold',
+			},
+		},
+		tooltip: {
+			trigger: 'axis',
+			formatter: (params: any) => {
+				let result = `${params[0].name}<br/>`;
+				params.forEach((param: any) => {
+					if (param.value !== null) {
+						result += `${param.seriesName}: ${param.value.toFixed(2)}%<br/>`;
+					}
+				});
+				return result;
+			},
+		},
+		legend: {
+			data: ['Rolling 7-Day Yield', 'Native Yield'],
+			top: 40,
+		},
+		grid: {
+			left: 80,
+			right: 80,
+			top: 100,
+			bottom: 80,
+		},
+		xAxis: {
+			type: 'category',
+			data: dates,
+			axisLabel: {
+				rotate: 45,
+				interval: Math.floor(dates.length / 10),
+			},
+		},
+		yAxis: {
+			type: 'value',
+			name: 'Yield (%)',
+			scale: true,
+			min: 0,
+			max: yieldBounds.max,
+			axisLabel: {
+				formatter: (value: number) => `${value.toFixed(1)}%`,
+			},
+			splitNumber: 5,
+		},
+		series: [
+			{
+				name: 'Rolling 7-Day Yield',
+				type: 'line',
+				data: rollingYields,
+				smooth: true,
+				lineStyle: {
+					width: 3,
+					color: '#91cc75',
+				},
+				connectNulls: false,
+			},
+			{
+				name: 'Native Yield',
+				type: 'line',
+				data: nativeYields,
+				smooth: true,
+				lineStyle: {
+					width: 3,
+					color: '#fac858',
+				},
+			},
+		],
+	};
+
+	chart.setOption(option);
+
+	const buffer = (chart.getDom() as any).toBuffer('image/png');
+	fs.writeFileSync(
+		path.join(EXPORTS_DIR, 'chart-rolling-7day-yield.png'),
+		buffer,
+	);
+	console.log('✅ Generated: chart-rolling-7day-yield.png');
 
 	chart.dispose();
 }
@@ -346,9 +463,10 @@ function createRollingYieldWithVolumeChart() {
 
 // Main execution
 async function generateChart() {
-	console.log('🎨 Generating rolling 30-day yield charts...\n');
+	console.log('🎨 Generating rolling yield charts...\n');
 
 	try {
+		createRolling7DayYieldChart();
 		createRollingYieldChart();
 		createRollingYieldWithVolumeChart();
 		console.log('\n✨ All charts generated successfully!');
